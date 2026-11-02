@@ -9,6 +9,7 @@ import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import com.pr0gramm.app.api.pr0gramm.Api
 import com.pr0gramm.app.api.pr0gramm.ApiProvider
 import com.pr0gramm.app.api.pr0gramm.LoginCookieJar
+import com.pr0gramm.app.api.pr0gramm.MediaAccessInterceptor
 import com.pr0gramm.app.db.AppDB
 import com.pr0gramm.app.db.CachedVoteQueries
 import com.pr0gramm.app.db.CollectionItemQueries
@@ -126,6 +127,9 @@ fun appInjector(app: Application) = Module.build {
             }
 
             .addInterceptor(UseSecondaryServerInterceptor())
+            .addInterceptor(MediaAccessInterceptor(verifiedSession = {
+                cookieJar.parsedCookie?.takeIf { it.verified }?.id
+            }))
 
             .addNetworkInterceptor(
                 DoNotCacheInterceptor(

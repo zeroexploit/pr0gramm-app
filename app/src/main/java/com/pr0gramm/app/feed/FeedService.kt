@@ -61,8 +61,8 @@ class FeedServiceImpl(
         val feedFilter = query.filter
 
         // filter by feed-type
-        val promoted = if (feedFilter.feedType === FeedType.PROMOTED) 1 else null
-        val following = if (feedFilter.feedType === FeedType.STALK) 1 else null
+        val promoted = true.takeIf { feedFilter.feedType === FeedType.PROMOTED }
+        val following = true.takeIf { feedFilter.feedType === FeedType.STALK }
 
         val flags = ContentType.combine(query.contentTypes)
 

@@ -4,13 +4,8 @@ import com.pr0gramm.app.BuildConfig
 import com.pr0gramm.app.Logger
 import com.pr0gramm.app.MoshiInstance
 import com.pr0gramm.app.Stats
-import com.pr0gramm.app.util.catchAll
-import com.squareup.moshi.adapter
 import okhttp3.HttpUrl.Companion.toHttpUrl
-import okhttp3.Interceptor
 import okhttp3.OkHttpClient
-import okhttp3.Response
-import okio.BufferedSource
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import retrofit2.create
@@ -28,8 +23,17 @@ class ApiProvider(base: String, client: OkHttpClient,
     private fun restAdapter(base: String, client: OkHttpClient): Api {
         return Retrofit.Builder()
                 .baseUrl(base.toHttpUrl())
+                .addConverterFactory(ApiBooleanConverterFactory)
                 .addConverterFactory(MoshiConverterFactory.create(MoshiInstance))
-                .client(client.newBuilder().addInterceptor(ErrorInterceptor()).build())
+                .client(client.newBuilder()
+                        .addInterceptor(ApiSessionInterceptor(
+                                nonce = { cookieJar.parsedCookie?.id?.let { Api.Nonce(it) } },
+                                onInvalidSession = {
+                                    logger.warn { "Got 'Not logged in' error, will logout the user now." }
+                                    cookieJar.clearLoginCookie()
+                                    Stats().increment("api.forbidden", "message:Notloggedin")
+                                },
+                        )).build())
                 .validateEagerly(BuildConfig.DEBUG)
                 .build().create()
     }
@@ -67,33 +71,4 @@ class ApiProvider(base: String, client: OkHttpClient,
         }
     }
 
-    private inner class ErrorInterceptor : Interceptor {
-        override fun intercept(chain: Interceptor.Chain): Response {
-            val response = chain.proceed(chain.request())
-
-            // if we get a valid "not allowed" error, we'll
-            if (response.code == 403) {
-                val body = response.peekBody(1024)
-                val err = tryDecodeError(body.source())
-                if (err?.error == "forbidden" && err.msg == "Not logged in") {
-                    logger.warn { "Got 'Not logged in' error, will logout the user now." }
-                    cookieJar.clearLoginCookie()
-
-                    val key = err.msg.filter { it.isLetter() }
-                    Stats().increment("api.forbidden", "message:$key")
-                }
-            }
-
-            // everything looks good, just return the response as usual
-            return response
-        }
-
-        private fun tryDecodeError(source: BufferedSource): Api.Error? {
-            catchAll {
-                return MoshiInstance.adapter<Api.Error>().fromJson(source)
-            }
-
-            return null
-        }
-    }
 }

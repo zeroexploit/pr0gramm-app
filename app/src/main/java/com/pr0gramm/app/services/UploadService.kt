@@ -177,7 +177,7 @@ class UploadService(
         }
 
         val uploadState = flow {
-            val posted = api.post(null, contentTypeTag, firstTags.joinToString(","), checkSimilar.toInt(), key, 1)
+            val posted = api.post(null, contentTypeTag, firstTags.joinToString(","), checkSimilar, key, 1)
 
             val state = postedToState(key, posted)
 
@@ -273,8 +273,7 @@ class UploadService(
      */
     suspend fun checkIsRateLimited(): Boolean {
         try {
-            api.ratelimited()
-            return false
+            return api.ratelimited().left <= 0
         } catch (err: Throwable) {
             if (err is HttpException && err.code() == 403) {
                 return true

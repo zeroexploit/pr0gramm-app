@@ -130,14 +130,14 @@ class CollectionsService(private val api: Api, private val userService: UserServ
 
     suspend fun create(name: String, isPublic: Boolean, isDefault: Boolean): Result<Long> {
         val response =
-            Result.ofValue(api.collectionsCreate(null, name, isPublic.toInt(), isDefault.toInt()))
+            Result.ofValue(api.collectionsCreate(null, name, isPublic, isDefault))
         handleCollectionUpdated(response)
         return response.map { it.collectionId }
     }
 
     suspend fun edit(id: Long, name: String, isPublic: Boolean, isDefault: Boolean): Result<Long> {
         val response =
-            Result.ofValue(api.collectionsEdit(null, id, name, isPublic.toInt(), isDefault.toInt()))
+            Result.ofValue(api.collectionsEdit(null, id, name, isPublic, isDefault))
         handleCollectionUpdated(response)
         return response.map { it.collectionId }
     }

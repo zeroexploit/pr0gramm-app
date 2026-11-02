@@ -372,7 +372,7 @@ class UserService(
      * Retrieves the user data and stores part of the data in the database.
      */
     suspend fun info(username: String): Api.Info {
-        return api.info(username, null)
+        return api.info(username, ContentType.combine(selectedContentType))
     }
 
     /**

@@ -12,8 +12,8 @@ import java.util.*
 interface Api {
     @GET("/api/items/get")
     suspend fun itemsGet(
-            @Query("promoted") promoted: Int?,
-            @Query("following") following: Int?,
+            @Query("promoted") promoted: Boolean?,
+            @Query("following") following: Boolean?,
             @Query("older") older: Long?,
             @Query("newer") newer: Long?,
             @Query("id") around: Long?,
@@ -28,7 +28,7 @@ interface Api {
     @FormUrlEncoded
     @POST("/api/items/vote")
     suspend fun vote(
-            @Field("_nonce") nonce: Nonce?,
+            @Header("X-XSRF-Token") nonce: Nonce?,
             @Field("id") id: Long,
             @Field("vote") voteValue: Int
     )
@@ -36,7 +36,7 @@ interface Api {
     @FormUrlEncoded
     @POST("/api/tags/vote")
     suspend fun voteTag(
-            @Field("_nonce") nonce: Nonce?,
+            @Header("X-XSRF-Token") nonce: Nonce?,
             @Field("id") id: Long,
             @Field("vote") voteValue: Int
     )
@@ -44,7 +44,7 @@ interface Api {
     @FormUrlEncoded
     @POST("/api/comments/vote")
     suspend fun voteComment(
-            @Field("_nonce") nonce: Nonce?,
+            @Header("X-XSRF-Token") nonce: Nonce?,
             @Field("id") id: Long,
             @Field("vote") voteValue: Int
     )
@@ -52,14 +52,14 @@ interface Api {
     @FormUrlEncoded
     @POST("/api/comments/fav")
     suspend fun commentsFav(
-            @Field("_nonce") nonce: Nonce?,
+            @Header("X-XSRF-Token") nonce: Nonce?,
             @Field("id") id: Long
     )
 
     @FormUrlEncoded
     @POST("/api/comments/unfav")
     suspend fun commentsUnfav(
-            @Field("_nonce") nonce: Nonce?,
+            @Header("X-XSRF-Token") nonce: Nonce?,
             @Field("id") id: Long
     )
 
@@ -78,14 +78,14 @@ interface Api {
     @FormUrlEncoded
     @POST("/api/profile/block")
     suspend fun block(
-            @Field("_nonce") nonce: Nonce?,
+            @Header("X-XSRF-Token") nonce: Nonce?,
             @Field("name") name: String
     )
 
     @FormUrlEncoded
     @POST("/api/tags/add")
     suspend fun addTags(
-            @Field("_nonce") nonce: Nonce?,
+            @Header("X-XSRF-Token") nonce: Nonce?,
             @Field("itemId") lastId: Long,
             @Field("tags") tags: String
     ): NewTag
@@ -96,7 +96,7 @@ interface Api {
     @FormUrlEncoded
     @POST("/api/comments/post")
     suspend fun postComment(
-            @Field("_nonce") nonce: Nonce?,
+            @Header("X-XSRF-Token") nonce: Nonce?,
             @Field("itemId") itemId: Long,
             @Field("parentId") parentId: Long,
             @Field("comment") comment: String
@@ -105,7 +105,7 @@ interface Api {
     @FormUrlEncoded
     @POST("/api/comments/delete")
     suspend fun hardDeleteComment(
-            @Field("_nonce") nonce: Nonce?,
+            @Header("X-XSRF-Token") nonce: Nonce?,
             @Field("id") commentId: Long,
             @Field("reason") reason: String
     )
@@ -113,7 +113,7 @@ interface Api {
     @FormUrlEncoded
     @POST("/api/comments/softDelete")
     suspend fun softDeleteComment(
-            @Field("_nonce") nonce: Nonce?,
+            @Header("X-XSRF-Token") nonce: Nonce?,
             @Field("id") commentId: Long,
             @Field("reason") reason: String
     )
@@ -130,9 +130,9 @@ interface Api {
     ): Sync
 
     @FormUrlEncoded
-    @POST("/api/user/sitesettings")
+    @POST("/api/user/siteSetting")
     suspend fun storeSettings(
-            @Field("_nonce") nonce: Nonce?,
+            @Header("X-XSRF-Token") nonce: Nonce?,
             @FieldMap settings: GenericSettings,
     )
 
@@ -142,7 +142,7 @@ interface Api {
     @GET("/api/profile/info")
     suspend fun info(
             @Query("name") name: String,
-            @Query("flags") flags: Int?
+            @Query("flags") flags: Int = 1
     ): Info
 
     @GET("/api/inbox/pending")
@@ -156,7 +156,7 @@ interface Api {
     @FormUrlEncoded
     @POST("/api/inbox/deleteConversation")
     suspend fun deleteConversation(
-            @Field("_nonce") nonce: Nonce?,
+            @Header("X-XSRF-Token") nonce: Nonce?,
             @Field("recipientName") name: String
     ): ConversationMessages
 
@@ -201,7 +201,7 @@ interface Api {
             @Query("flags") flags: Int?
     ): UserComments
 
-    @GET("/api/profile/commentlikes")
+    @GET("/api/profile/commentLikes")
     suspend fun userCommentsLike(
             @Query("name") user: String,
             @Query("before") before: Long,
@@ -211,7 +211,7 @@ interface Api {
     @FormUrlEncoded
     @POST("/api/inbox/post")
     suspend fun sendMessage(
-            @Field("_nonce") nonce: Nonce?,
+            @Header("X-XSRF-Token") nonce: Nonce?,
             @Field("comment") text: String,
             @Field("recipientId") recipient: Long
     )
@@ -219,21 +219,20 @@ interface Api {
     @FormUrlEncoded
     @POST("/api/inbox/post")
     suspend fun sendMessage(
-            @Field("_nonce") nonce: Nonce?,
+            @Header("X-XSRF-Token") nonce: Nonce?,
             @Field("comment") text: String,
             @Field("recipientName") recipient: String
     ): ConversationMessages
 
-    @FormUrlEncoded
-    @POST("/api/inbox/read")
+    @GET("/api/inbox/read")
     suspend fun markAsRead(
-            @Field("_nonce") nonce: Nonce?,
-            @Field("type") text: String,
-            @Field("messageId") messageId: Long,
+            @Header("X-XSRF-Token") nonce: Nonce?,
+            @Query("messageType") text: String,
+            @Query("messageId") messageId: Long,
     )
 
-    @GET("/api/items/ratelimited")
-    suspend fun ratelimited()
+    @GET("/api/items/rateLimited")
+    suspend fun ratelimited(): UploadLimit
 
     @POST("/api/items/upload")
     suspend fun upload(
@@ -243,10 +242,10 @@ interface Api {
     @FormUrlEncoded
     @POST("/api/items/post")
     suspend fun post(
-            @Field("_nonce") nonce: Nonce?,
+            @Header("X-XSRF-Token") nonce: Nonce?,
             @Field("sfwstatus") sfwStatus: String,
             @Field("tags") tags: String,
-            @Field("checkSimilar") checkSimilar: Int,
+            @Field("checkSimilar") checkSimilar: Boolean,
             @Field("key") key: String,
             @Field("processAsync") processAsync: Int?
     ): Posted
@@ -259,7 +258,7 @@ interface Api {
     @FormUrlEncoded
     @POST("/api/user/invite")
     suspend fun invite(
-            @Field("_nonce") nonce: Nonce?,
+            @Header("X-XSRF-Token") nonce: Nonce?,
             @Field("email") email: String
     ): Invited
 
@@ -267,7 +266,7 @@ interface Api {
     @FormUrlEncoded
     @POST("api/items/delete")
     suspend fun deleteItem(
-            @Field("_nonce") nonce: Nonce?,
+            @Header("X-XSRF-Token") nonce: Nonce?,
             @Field("id") id: Long,
             @Field("reason") reason: String,
             @Field("customReason") customReason: String,
@@ -293,7 +292,7 @@ interface Api {
     @FormUrlEncoded
     @POST("api/tags/delete")
     suspend fun deleteTag(
-            @Field("_nonce") nonce: Nonce?,
+            @Header("X-XSRF-Token") nonce: Nonce?,
             @Field("itemId") itemId: Long,
             @Field("banUsers") banUser: String?,
             @Field("days") days: Float?,
@@ -303,23 +302,23 @@ interface Api {
     @FormUrlEncoded
     @POST("api/profile/follow")
     suspend fun profileFollow(
-            @Field("_nonce") nonce: Nonce?,
+            @Header("X-XSRF-Token") nonce: Nonce?,
             @Field("name") username: String
     )
 
     @FormUrlEncoded
     @POST("api/profile/subscribe")
     suspend fun profileSubscribe(
-            @Field("_nonce") nonce: Nonce?,
+            @Header("X-XSRF-Token") nonce: Nonce?,
             @Field("name") username: String,
     )
 
     @FormUrlEncoded
     @POST("api/profile/unsubscribe")
     suspend fun profileUnsubscribe(
-            @Field("_nonce") nonce: Nonce?,
+            @Header("X-XSRF-Token") nonce: Nonce?,
             @Field("name") username: String,
-            @Field("keepFollow") keepFollow: Boolean? = null,
+            @Field("keepFollow") keepFollow: Boolean = false,
     )
 
     @GET("api/profile/suggest")
@@ -339,42 +338,41 @@ interface Api {
     @FormUrlEncoded
     @POST("api/contact/report")
     suspend fun report(
-            @Field("_nonce") nonce: Nonce?,
+            @Header("X-XSRF-Token") nonce: Nonce?,
             @Field("itemId") item: Long,
             @Field("commentId") commentId: Long,
             @Field("reason") reason: String
     )
 
     @FormUrlEncoded
-    @POST("api/user/sendpasswordresetmail")
+    @POST("api/user/sendPasswordResetMail")
     suspend fun requestPasswordRecovery(
             @Field("email") email: String
     )
 
     @FormUrlEncoded
-    @POST("api/user/resetpassword")
+    @POST("api/user/resetPassword")
     suspend fun resetPassword(
             @Field("name") name: String,
             @Field("token") token: String,
             @Field("password") password: String
     ): ResetPassword
 
-    @FormUrlEncoded
     @POST("api/user/handoverrequest")
     suspend fun handoverToken(
-            @Field("_nonce") nonce: Nonce?
+            @Header("X-XSRF-Token") nonce: Nonce?
     ): HandoverToken
 
     @GET("api/bookmarks/get")
     suspend fun bookmarks(): Bookmarks
 
-    @GET("api/bookmarks/get?default")
+    @GET("api/bookmarks/get?default=1")
     suspend fun defaultBookmarks(): Bookmarks
 
     @FormUrlEncoded
     @POST("api/bookmarks/add")
     suspend fun bookmarksAdd(
-            @Field("_nonce") nonce: Nonce?,
+            @Header("X-XSRF-Token") nonce: Nonce?,
             @Field("name") name: String,
             @Field("link") link: String
     ): Bookmarks
@@ -382,7 +380,7 @@ interface Api {
     @FormUrlEncoded
     @POST("api/bookmarks/delete")
     suspend fun bookmarksDelete(
-            @Field("_nonce") nonce: Nonce?,
+            @Header("X-XSRF-Token") nonce: Nonce?,
             @Field("name") name: String
     ): Bookmarks
 
@@ -398,33 +396,33 @@ interface Api {
     @FormUrlEncoded
     @POST("api/collections/create")
     suspend fun collectionsCreate(
-            @Field("_nonce") nonce: Nonce?,
+            @Header("X-XSRF-Token") nonce: Nonce?,
             @Field("name") name: String,
-            @Field("isPublic") isPublic: Int,
-            @Field("isDefault") isDefault: Int
+            @Field("isPublic") isPublic: Boolean,
+            @Field("isDefault") isDefault: Boolean
     ): CollectionCreated
 
     @FormUrlEncoded
     @POST("api/collections/edit")
     suspend fun collectionsEdit(
-            @Field("_nonce") nonce: Nonce?,
+            @Header("X-XSRF-Token") nonce: Nonce?,
             @Field("collectionId") id: Long,
             @Field("name") name: String,
-            @Field("isPublic") isPublic: Int,
-            @Field("isDefault") isDefault: Int
+            @Field("isPublic") isPublic: Boolean,
+            @Field("isDefault") isDefault: Boolean
     ): CollectionCreated
 
     @FormUrlEncoded
     @POST("api/collections/delete")
     suspend fun collectionsDelete(
-            @Field("_nonce") nonce: Nonce?,
+            @Header("X-XSRF-Token") nonce: Nonce?,
             @Field("collectionId") collectionId: Long
     ): CollectionCreated
 
     @FormUrlEncoded
     @POST("api/collections/add")
     suspend fun collectionsAdd(
-            @Field("_nonce") nonce: Nonce?,
+            @Header("X-XSRF-Token") nonce: Nonce?,
             @Field("collectionId") collectionId: Long?,
             @Field("itemId") itemId: Long
     ): AddToCollectionResponse
@@ -432,13 +430,16 @@ interface Api {
     @FormUrlEncoded
     @POST("api/collections/remove")
     suspend fun collectionsRemove(
-            @Field("_nonce") nonce: Nonce?,
+            @Header("X-XSRF-Token") nonce: Nonce?,
             @Field("collectionId") collectionId: Long,
             @Field("itemId") itemId: Long
     ): CollectionResponse
 
     @GET("api/user/me")
     suspend fun me(): MeInfo
+
+    @GET("api/user/avToken")
+    suspend fun ageVerificationToken(): AgeVerificationToken
 
     @GET("api/seen/bits")
     suspend fun seenBitsGet(): SeenBits
@@ -462,10 +463,18 @@ interface Api {
 
     @JsonClass(generateAdapter = true)
     class Error(
-            val error: String,
-            val code: Int,
-            val msg: String
+            val error: String? = null,
+            val code: Int? = null,
+            val msg: String? = null,
+            val detail: String? = null,
+            val title: String? = null,
     )
+
+    @JsonClass(generateAdapter = true)
+    class UploadLimit(val left: Int)
+
+    @JsonClass(generateAdapter = true)
+    class AgeVerificationToken(val token: String, val validUntil: Instant)
 
     @JsonClass(generateAdapter = true)
     class UserValidateResponse(
@@ -634,7 +643,7 @@ interface Api {
         @JsonClass(generateAdapter = true)
         class BanInfo(
                 val banned: Boolean,
-                val reason: String,
+                val reason: String = "",
                 @Json(name = "till") val endTime: Instant?
         )
     }
@@ -1001,7 +1010,7 @@ interface Api {
     @JsonClass(generateAdapter = true)
     data class SeenBits(
             /** Same user ID as returned by /api/user/me. */
-            val userIdentifier: String,
+            @Json(name = "identifier") val userIdentifier: String,
             /** Server sends the base64 encoded value of compressed seen bits. Automatically decoded by Retrofit. */
             val value: ByteArray,
             /** Current version of seen bits. */
