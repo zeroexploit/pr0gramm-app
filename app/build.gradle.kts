@@ -107,8 +107,10 @@ android {
 
 android.applicationVariants.configureEach {
     val variant = name
+    val capitalizedVariant = variant.replaceFirstChar { it.titlecase() }
+    val buildDirectory = layout.buildDirectory
 
-    tasks.named("merge${variant.capitalize()}JniLibFolders").configure {
+    tasks.named("merge${capitalizedVariant}JniLibFolders").configure {
         doLast {
             fileTree("build/") {
                 include("**/armeabi/libpl_droidsonroids_gif.so")
@@ -118,13 +120,13 @@ android.applicationVariants.configureEach {
     }
 
 
-    tasks.named("package${variant.capitalize()}").configure {
+    tasks.named("package${capitalizedVariant}").configure {
         doLast {
             println("Checking for important files in the apk...")
 
             val pathsToApk = listOf(
-                "$buildDir/outputs/apk/$variant/app-$variant.apk",
-                "$buildDir/intermediates/apk/$variant/app-$variant.apk"
+                buildDirectory.file("outputs/apk/$variant/app-$variant.apk").get().asFile.absolutePath,
+                buildDirectory.file("intermediates/apk/$variant/app-$variant.apk").get().asFile.absolutePath
             )
 
             if (pathsToApk.none { file(it).exists() }) {
