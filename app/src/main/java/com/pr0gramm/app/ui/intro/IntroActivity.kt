@@ -4,11 +4,11 @@ import android.app.Activity
 import android.os.Bundle
 import android.view.View
 import android.widget.RelativeLayout
-import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updateLayoutParams
-import com.github.paolorotolo.appintro.AppIntro
+import com.github.appintro.AppIntro
+import com.github.appintro.AppIntroPageTransformerType
 import com.pr0gramm.app.BuildConfig
 import com.pr0gramm.app.R
 import com.pr0gramm.app.RequestCodes
@@ -25,7 +25,7 @@ import com.pr0gramm.app.util.tryEnumValueOf
 class IntroActivity : AppIntro(), LazyInjectorAware {
     override val injector: PropertyInjector = PropertyInjector()
 
-    override fun getLayoutId(): Int = R.layout.activity_intro
+    override val layoutId: Int = R.layout.activity_intro
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,7 +42,7 @@ class IntroActivity : AppIntro(), LazyInjectorAware {
                     title = "",
                     description = "Die folgenden Seiten werden dir helfen, die pr0gramm App an deine Wünsche anzupassen!",
                     imageDrawable = R.drawable.ic_arrow,
-                    bgColor = ContextCompat.getColor(this, R.color.orange_primary)))
+                    bgColorRes = R.color.orange_primary))
         }
 
         if (Slides.UPDATE in slidesToShow) {
@@ -50,7 +50,7 @@ class IntroActivity : AppIntro(), LazyInjectorAware {
                     title = "",
                     description = "Es gab ein paar Updates in der App. Die folgenden Seiten werden dir helfen, die pr0gramm App an deine Wünsche anzupassen und neue Features zu entdecken!",
                     imageDrawable = R.drawable.ic_arrow,
-                    bgColor = ContextCompat.getColor(this, R.color.orange_primary)))
+                    bgColorRes = R.color.orange_primary))
         }
 
         if (Slides.CATEOGRIES in slidesToShow) {
@@ -80,13 +80,13 @@ class IntroActivity : AppIntro(), LazyInjectorAware {
                     Diesen Willkommensbildschirm kannst du in den Einstellungen jederzeit erneut aufrufen.
                     """.trimIndent(),
                 imageDrawable = R.drawable.ic_action_favorite,
-                bgColor = ContextCompat.getColor(this, R.color.olive_primary)))
+                bgColorRes = R.color.olive_primary))
 
-        setGoBackLock(true)
-        showSkipButton(false)
+        isSystemBackButtonLocked = true
+        isSkipButtonEnabled = false
         setDoneText(getString(R.string.action_done))
 
-        setFadeAnimation()
+        setTransformer(AppIntroPageTransformerType.Fade)
 
         ViewCompat.setOnApplyWindowInsetsListener(find<View>(R.id.bottom)) { v, insets ->
             v.updateLayoutParams<RelativeLayout.LayoutParams> {

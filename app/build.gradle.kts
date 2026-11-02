@@ -1,24 +1,23 @@
-import org.gradle.internal.os.OperatingSystem
-import java.io.ByteArrayOutputStream
+import com.android.build.api.artifact.SingleArtifact
+import java.util.zip.ZipFile
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.google.services)
     alias(libs.plugins.firebase.crashlytics)
 }
 
 apply(from = "version.gradle.kts")
-val appVersion: Int by extra
+val appVersion = extra["appVersion"] as Int
 
 android {
     namespace = "com.pr0gramm.app"
-    compileSdk = 35
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.pr0gramm.app"
-        minSdk = 23
+        minSdk = 24
         targetSdk = 33
         versionCode = appVersion
         versionName = "1.${(appVersion / 10)}.${(appVersion % 10)}"
@@ -48,25 +47,16 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-
     buildFeatures {
         viewBinding = true
         buildConfig = true
         compose = true
     }
 
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.13"
-    }
-
     buildTypes {
         getByName("debug") {
             isMinifyEnabled = false
             isShrinkResources = false
-            isCrunchPngs = false
 
             proguardFiles("proguard-rules-base.pro", "proguard-rules-debug.pro")
 
@@ -78,7 +68,6 @@ android {
             isMinifyEnabled = true
             // setting this to true prevents the in-app update dialog to work.
             isShrinkResources = false
-            isCrunchPngs = false
 
             proguardFiles("proguard-rules-base.pro", "proguard-rules-release.pro")
 
@@ -105,55 +94,39 @@ android {
     }
 }
 
-android.applicationVariants.configureEach {
-    val variant = name
-    val capitalizedVariant = variant.replaceFirstChar { it.titlecase() }
-    val buildDirectory = layout.buildDirectory
-
-    tasks.named("merge${capitalizedVariant}JniLibFolders").configure {
-        doLast {
-            fileTree("build/") {
-                include("**/armeabi/libpl_droidsonroids_gif.so")
-                include("**/mips*/*.so")
-            }.forEach { it.delete() }
-        }
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
     }
+}
 
+abstract class VerifyApkResources : DefaultTask() {
+    @get:InputDirectory
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val apkDirectory: DirectoryProperty
 
-    tasks.named("package${capitalizedVariant}").configure {
-        doLast {
-            println("Checking for important files in the apk...")
-
-            val pathsToApk = listOf(
-                buildDirectory.file("outputs/apk/$variant/app-$variant.apk").get().asFile.absolutePath,
-                buildDirectory.file("intermediates/apk/$variant/app-$variant.apk").get().asFile.absolutePath
-            )
-
-            if (pathsToApk.none { file(it).exists() }) {
-                throw RuntimeException("No .apk file found.")
-            }
-
-            pathsToApk.forEach { pathToApk ->
-                println(pathToApk)
-                if (file(pathToApk).exists()) {
-                    val output = providers.exec {
-                        if (OperatingSystem.current().isWindows) {
-                            commandLine("tar", "-tf", pathToApk)
-                        } else {
-                            commandLine("unzip", "-v", pathToApk)
-                        }
-                    }
-
-                    println(output.result.get())
-
-                    val outputStr = output.standardOutput.asText.get()
-
-                    if (!outputStr.contains("okhttp3/internal/publicsuffix/publicsuffixes.gz")) {
-                        throw RuntimeException("publicsuffixes.gz not found in build")
-                    }
+    @TaskAction
+    fun verify() {
+        val apks = apkDirectory.get().asFile.listFiles().orEmpty().filter { it.extension == "apk" }
+        check(apks.isNotEmpty()) { "No .apk file found." }
+        apks.forEach { apk ->
+            ZipFile(apk).use { zip ->
+                // OkHttp 5's Android variant ships this database as an Android asset.
+                check(zip.getEntry("assets/PublicSuffixDatabase.list") != null) {
+                    "OkHttp public suffix database not found in ${apk.name}"
                 }
             }
         }
+    }
+}
+
+androidComponents.onVariants { variant ->
+    val capitalizedVariant = variant.name.replaceFirstChar { it.titlecase() }
+    val verifyApk = tasks.register<VerifyApkResources>("verify${capitalizedVariant}ApkResources") {
+        apkDirectory.set(variant.artifacts.get(SingleArtifact.APK))
+    }
+    tasks.matching { it.name == "assemble$capitalizedVariant" }.configureEach {
+        dependsOn(verifyApk)
     }
 }
 

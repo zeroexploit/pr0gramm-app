@@ -1,39 +1,38 @@
 [versions]
-agp = "8.13.2"
-kotlin = "2.1.10"
-ksp = "2.1.10-1.0.30"
-gradleVersions = "0.51.0"
-gms = "4.4.2"
-gradleCrashlytics = "3.0.3"
-sqldelight = "2.0.2"
-coreKtx = "1.16.0"
-kotlinCoroutines = "1.10.1"
-viewMaterial = "1.12.0"
+agp = "9.5.0"
+kotlin = "2.4.21"
+ksp = "2.3.13"
+gradleVersions = "0.67.0"
+gms = "4.5.0"
+gradleCrashlytics = "3.0.8"
+sqldelight = "2.4.1"
+coreKtx = "1.19.1"
+kotlinCoroutines = "1.11.0"
+viewMaterial = "1.14.0"
 recyclerview = "1.4.0"
-browser = "1.8.0"
-annotation = "1.9.1"
+browser = "1.10.0"
+annotation = "1.11.0"
 cardview = "1.0.0"
-exifinterface = "1.4.1"
+exifinterface = "1.4.2"
 preferenceKtx = "1.2.1"
-appcompat = "1.7.0"
-swiperefreshlayout = "1.1.0"
+appcompat = "1.8.0"
+swiperefreshlayout = "1.2.0"
 drawerlayout = "1.2.0"
 documentfile = "1.1.0"
-pagingRuntime = "3.3.6"
-constraintlayout = "2.2.1"
-userMessagingPlatform = "3.2.0"
-activity = "1.10.1"
-androidxLifecycle = "2.9.0"
-fragmentKtx = "1.8.7"
-composeBom = "2025.05.01"
-# 23.0.0 to 23.2.0 breaks the apk for some reason (too small, fails to read android-manifest)
-playServicesAds = "24.3.0"
-firebaseBom = "33.14.0"
-okhttpBom = "4.12.0"
-retrofit = "2.11.0"
+pagingRuntime = "3.5.3"
+constraintlayout = "2.2.2"
+userMessagingPlatform = "4.0.0"
+activity = "1.13.0"
+androidxLifecycle = "2.11.0"
+fragmentKtx = "1.9.1"
+composeBom = "2026.09.00"
+playServicesAds = "25.5.0"
+firebaseBom = "35.1.0"
+okhttpBom = "5.5.1"
+retrofit = "3.0.0"
 picasso = "2.8"
-moshi = "1.15.1"
-gifDrawable = "1.2.28"
+moshi = "1.15.2"
+gifDrawable = "1.2.32"
 namedregex = "1.0.0"
 materialishProgress = "1.7"
 proguardAnnotations = "1.0.2"
@@ -41,10 +40,9 @@ subsamplingImageView = "3.10.0-1"
 dogstatsdClient = "2.0.16"
 shortcutbadger = "1.1.22"
 speeddial = "3.3.0"
-workRuntimeKtx = "2.10.1"
-# migration to 6+ takes some effort
-appintro = "5.1.0"
-exoplayer = "1.7.1"
+workRuntimeKtx = "2.12.0"
+appintro = "6.3.1"
+exoplayer = "1.11.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -94,7 +92,7 @@ dogstadClient = { group = "com.indeed", name = "java-dogstatsd-client", version.
 shortcutbadger = { group = "me.leolin", name = "ShortcutBadger", version.ref = "shortcutbadger" }
 speeddial = { group = "com.leinardi.android", name = "speed-dial", version.ref = "speeddial" }
 androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "workRuntimeKtx" }
-appintro = { group = "com.github.paolorotolo", name = "appintro", version.ref = "appintro" }
+appintro = { group = "com.github.AppIntro", name = "AppIntro", version.ref = "appintro" }
 androidx-media3-exoplayer = { group = "androidx.media3", name = "media3-exoplayer", version.ref = "exoplayer" }
 sqldelight-primitiveadapters = { group = "app.cash.sqldelight", name = "primitive-adapters", version.ref = "sqldelight" }
 sqldelight-androiddriver = { group = "app.cash.sqldelight", name = "android-driver", version.ref = "sqldelight" }
@@ -103,10 +101,9 @@ sqldelight-coroutinesextensions = { group = "app.cash.sqldelight", name = "corou
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 google-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
-gradle-versions = { id = "com.github.ben-manes.versions", version.ref = "gradleVersions" }
+gradle-versions = { id = "io.github.ben-manes.versions", version.ref = "gradleVersions" }
 google-services = { id = "com.google.gms.google-services", version.ref = "gms" }
 firebase-crashlytics = { id = "com.google.firebase.crashlytics", version.ref = "gradleCrashlytics" }
 sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }

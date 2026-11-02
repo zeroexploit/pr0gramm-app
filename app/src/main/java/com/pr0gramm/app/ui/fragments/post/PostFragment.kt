@@ -120,7 +120,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import okhttp3.internal.toHexString
 import java.util.Locale
 import kotlin.math.min
 
@@ -395,12 +394,12 @@ class PostFragment : BaseFragment("PostFragment"), NewTagDialogFragment.OnAddNew
             "Applying post fragment state: h=${viewerBaseHeight}, refreshing=${state.refreshing}, " +
                     "itemVote=${state.itemVote}, " +
                     "tags=${state.tags.size}, tagVotes=${state.tagVotes.size}/${
-                        state.tagVotes.hashCode().toHexString()
+                        state.tagVotes.hashCode().toUInt().toString(16)
                     }, " +
                     "comments=${state.comments.size}/${state.comments.hashCode()}, " +
                     "loading=${state.commentsLoading}, commentsVisible=${state.commentsVisible}, " +
                     "followState=${state.followState}, " +
-                    "mcc=${mediaControlsContainer?.identityHashCode()?.toHexString()}"
+                    "mcc=${mediaControlsContainer?.identityHashCode()?.toUInt()?.toString(16)}"
         }
 
         val items = mutableListOf<PostAdapter.Item>()

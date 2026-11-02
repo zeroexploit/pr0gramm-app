@@ -1,17 +1,16 @@
 plugins {
     alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.google.ksp)
     alias(libs.plugins.sqldelight)
 }
 
 android {
     namespace = "com.pr0gramm.app.model"
-    compileSdk = 35
+    compileSdk = 37
 
 
     defaultConfig {
-        minSdk = 23
+        minSdk = 24
         lint.targetSdk = 31
 
         testInstrumentationRunner = "android.support.test.runner.AndroidJUnitRunner"
@@ -24,12 +23,14 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-
     buildFeatures {
         buildConfig = true
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
     }
 }
 
