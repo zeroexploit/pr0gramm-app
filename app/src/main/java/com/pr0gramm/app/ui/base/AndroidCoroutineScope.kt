@@ -9,6 +9,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import androidx.lifecycle.withStateAtLeast
 import com.pr0gramm.app.BuildConfig
 import com.pr0gramm.app.Logger
 import com.pr0gramm.app.ui.dialogs.ErrorDialogFragment
@@ -183,13 +185,33 @@ inline fun <T> retryUpTo(tryCount: Int, delay: () -> Unit = {}, block: () -> T):
     throw error
 }
 
+/** Runs a one-shot action once the owner reaches the state; destruction cancels it. */
+internal fun LifecycleOwner.launchOnceAtState(
+    state: Lifecycle.State,
+    block: suspend CoroutineScope.() -> Unit,
+): Job = lifecycleScope.launch {
+    lifecycle.withStateAtLeast(state) { }
+    block()
+}
+
+/** Restarts observations when the owner becomes active and cancels them when inactive. */
+fun LifecycleOwner.repeatWhenStarted(block: suspend CoroutineScope.() -> Unit): Job =
+    lifecycleScope.launch(DefaultCoroutineExceptionHandler) {
+        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED, block)
+    }
+
+fun LifecycleOwner.repeatWhenResumed(block: suspend CoroutineScope.() -> Unit): Job =
+    lifecycleScope.launch(DefaultCoroutineExceptionHandler) {
+        lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED, block)
+    }
+
 fun AppCompatActivity.launchWhenCreated(
     ignoreErrors: Boolean = false,
     busyIndicator: Boolean = false,
     block: suspend CoroutineScope.() -> Unit
 ): Job {
 
-    return lifecycleScope.launchWhenCreated(decorate(this, ignoreErrors, busyIndicator, block))
+    return launchOnceAtState(Lifecycle.State.CREATED, decorate(this, ignoreErrors, busyIndicator, block))
 }
 
 fun AppCompatActivity.launchWhenStarted(
@@ -198,7 +220,7 @@ fun AppCompatActivity.launchWhenStarted(
     block: suspend CoroutineScope.() -> Unit
 ): Job {
 
-    return lifecycleScope.launchWhenStarted(decorate(this, ignoreErrors, busyIndicator, block))
+    return launchOnceAtState(Lifecycle.State.STARTED, decorate(this, ignoreErrors, busyIndicator, block))
 }
 
 fun AppCompatActivity.launchWhenResumed(
@@ -207,7 +229,7 @@ fun AppCompatActivity.launchWhenResumed(
     block: suspend CoroutineScope.() -> Unit
 ): Job {
 
-    return lifecycleScope.launchWhenResumed(decorate(this, ignoreErrors, busyIndicator, block))
+    return launchOnceAtState(Lifecycle.State.RESUMED, decorate(this, ignoreErrors, busyIndicator, block))
 }
 
 
@@ -217,7 +239,7 @@ fun Fragment.launchWhenCreated(
     block: suspend CoroutineScope.() -> Unit
 ): Job {
 
-    return lifecycleScope.launchWhenCreated {
+    return launchOnceAtState(Lifecycle.State.CREATED) {
         decorate(requireActivity(), ignoreErrors, busyIndicator, block)()
     }
 }
@@ -228,7 +250,7 @@ fun Fragment.launchWhenViewCreated(
     block: suspend CoroutineScope.() -> Unit
 ): Job {
 
-    return viewLifecycleOwner.lifecycleScope.launchWhenCreated {
+    return viewLifecycleOwner.launchOnceAtState(Lifecycle.State.CREATED) {
         decorate(requireActivity(), ignoreErrors, busyIndicator, block)()
     }
 }
@@ -239,7 +261,7 @@ fun Fragment.launchWhenStarted(
     block: suspend CoroutineScope.() -> Unit
 ): Job {
 
-    return lifecycleScope.launchWhenStarted {
+    return launchOnceAtState(Lifecycle.State.STARTED) {
         decorate(requireActivity(), ignoreErrors, busyIndicator, block)()
     }
 }
@@ -250,7 +272,7 @@ fun Fragment.launchWhenResumed(
     block: suspend CoroutineScope.() -> Unit
 ): Job {
 
-    return lifecycleScope.launchWhenResumed {
+    return launchOnceAtState(Lifecycle.State.RESUMED) {
         decorate(requireActivity(), ignoreErrors, busyIndicator, block)()
     }
 }

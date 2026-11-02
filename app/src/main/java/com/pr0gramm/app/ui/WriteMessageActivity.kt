@@ -26,6 +26,7 @@ import com.pr0gramm.app.parcel.DefaultParcelable
 import com.pr0gramm.app.parcel.MessageSerializer
 import com.pr0gramm.app.parcel.NewCommentParceler
 import com.pr0gramm.app.parcel.SimpleCreator
+import com.pr0gramm.app.parcel.getExtraParcelableOrNull
 import com.pr0gramm.app.parcel.getParcelableOrNull
 import com.pr0gramm.app.parcel.javaClassOf
 import com.pr0gramm.app.parcel.readStringNotNull
@@ -71,7 +72,7 @@ class WriteMessageActivity : BaseAppCompatActivity("WriteMessageActivity") {
     private val titleOverride: String? by lazy { intent.getStringExtra(ARGUMENT_TITLE) }
 
     private val parentComments: List<ParentComment> by lazy {
-        intent.getParcelableExtra<ParentComments>(ARGUMENT_EXCERPTS)?.comments ?: listOf()
+        intent.getExtraParcelableOrNull<ParentComments>(ARGUMENT_EXCERPTS)?.comments ?: listOf()
     }
 
     private var selectedUsers by observeChangeEx(setOf<String>()) { _, _ -> updateViewState() }

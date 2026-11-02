@@ -7,9 +7,11 @@ import android.graphics.BitmapRegionDecoder
 import android.graphics.Point
 import android.graphics.Rect
 import android.net.Uri
+import android.os.Build
 import androidx.core.net.toFile
 import com.pr0gramm.app.util.isLocalFile
 import java.io.FileInputStream
+import java.io.IOException
 
 /**
  * Default decoder using android region decoder.
@@ -22,8 +24,14 @@ class AndroidRegionDecoder(private val config: Bitmap.Config) : Decoder {
             throw IllegalArgumentException("Must be a file:// uri")
 
         val decoder = FileInputStream(uri.toFile()).use { input ->
-            BitmapRegionDecoder.newInstance(input.fd, false)
-        }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                BitmapRegionDecoder.newInstance(input)
+            } else {
+                // The one-argument overload was added in Android 12.
+                @Suppress("DEPRECATION")
+                BitmapRegionDecoder.newInstance(input.fd, false)
+            }
+        } ?: throw IOException("Could not decode image: $uri")
 
         this.decoder = decoder
         return Point(decoder.width, decoder.height)

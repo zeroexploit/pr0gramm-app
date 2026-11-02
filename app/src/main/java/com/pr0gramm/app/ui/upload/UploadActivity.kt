@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.view.MenuItem
 import androidx.fragment.app.Fragment
 import com.pr0gramm.app.R
+import com.pr0gramm.app.parcel.getExtraParcelableOrNull
 import com.pr0gramm.app.services.ThemeHelper
 import com.pr0gramm.app.services.UploadService
 import com.pr0gramm.app.ui.base.BaseAppCompatActivity
@@ -75,7 +76,7 @@ class UploadActivity : BaseAppCompatActivity("UploadActivity"), ChooseMediaTypeF
     private fun showUploadFragment(type: UploadMediaType?, addToBackstack: Boolean) {
         val fragment = when {
             intent?.action == Intent.ACTION_SEND -> {
-                val url = intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
+                val url = intent.getExtraParcelableOrNull<Uri>(Intent.EXTRA_STREAM)
                 UploadFragment.forLocalUri(url)
             }
 

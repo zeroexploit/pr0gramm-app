@@ -352,7 +352,7 @@ inline fun Context.dp(dpValue: Int): Int {
 
 @Suppress("NOTHING_TO_INLINE")
 inline fun Context.sp(spValue: Float): Float {
-    return spValue * resources.displayMetrics.scaledDensity
+    return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, spValue, resources.displayMetrics)
 }
 
 @Suppress("NOTHING_TO_INLINE")
@@ -372,7 +372,7 @@ inline fun View.dp(dpValue: Int): Int {
 
 @Suppress("NOTHING_TO_INLINE")
 inline fun View.sp(spValue: Float): Float {
-    return spValue * resources.displayMetrics.scaledDensity
+    return context.sp(spValue)
 }
 
 @Suppress("NOTHING_TO_INLINE")
@@ -576,14 +576,6 @@ inline fun <reified T : Activity> Activity.startActivity(
 
 inline fun <reified T : Activity> Fragment.startActivity(configureIntent: (Intent) -> Unit = {}) {
     startActivity(Intent(requireContext(), T::class.java).also(configureIntent))
-}
-
-inline fun <reified T : Activity> Fragment.startActivity(
-    requestCode: Int = -1,
-    configureIntent: (Intent) -> Unit = {}
-) {
-    val intent = Intent(requireContext(), T::class.java).also(configureIntent)
-    startActivityForResult(intent, requestCode)
 }
 
 val Class<*>.directName: String

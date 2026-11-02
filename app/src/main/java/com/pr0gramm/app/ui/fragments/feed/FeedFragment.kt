@@ -9,9 +9,10 @@ import android.view.MenuItem
 import android.view.View
 import android.view.animation.DecelerateInterpolator
 import android.widget.ImageView
+import androidx.core.view.MenuProvider
 import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.whenResumed
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -35,6 +36,7 @@ import com.pr0gramm.app.feed.FeedManager
 import com.pr0gramm.app.feed.FeedService
 import com.pr0gramm.app.feed.FeedType
 import com.pr0gramm.app.feed.withoutImplicit
+import com.pr0gramm.app.parcel.getParcelableOrNull
 import com.pr0gramm.app.parcel.getParcelableOrThrow
 import com.pr0gramm.app.services.BookmarkService
 import com.pr0gramm.app.services.FollowService
@@ -112,10 +114,10 @@ import kotlin.math.min
 /**
  */
 class FeedFragment : BaseFragment("FeedFragment", R.layout.fragment_feed), FilterFragment, TitleFragment,
-        BackAwareFragment {
+        BackAwareFragment, MenuProvider {
 
     private val feedStateModel by viewModels { handle ->
-        val start = arguments?.getParcelable<CommentRef?>(ARG_FEED_START)
+        val start = arguments?.getParcelableOrNull<CommentRef>(ARG_FEED_START)
         if (start != null) {
             logger.debug { "Requested to open item $start on load" }
             autoScrollRef = ScrollRef(start, autoOpen = true)
@@ -178,8 +180,6 @@ class FeedFragment : BaseFragment("FeedFragment", R.layout.fragment_feed), Filte
      * Initialize a new feed fragment.
      */
     init {
-        setHasOptionsMenu(true)
-
         debugOnly {
             MainScope.launch {
                 lifecycle.asEventFlow().collect { event ->
@@ -196,6 +196,7 @@ class FeedFragment : BaseFragment("FeedFragment", R.layout.fragment_feed), Filte
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        requireActivity().addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.RESUMED)
 
         val activity = requireActivity()
 
@@ -292,7 +293,7 @@ class FeedFragment : BaseFragment("FeedFragment", R.layout.fragment_feed), Filte
         }
 
         launchInViewScope {
-            whenResumed {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
                 userStateModel.userState.collectLatest { userState ->
                     requireActivity().invalidateOptionsMenu()
 
@@ -765,12 +766,11 @@ class FeedFragment : BaseFragment("FeedFragment", R.layout.fragment_feed), Filte
         min((screenWidth / 120.0 + 0.5).toInt(), if (portrait) 5 else 7)
     }
 
-    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-        super.onCreateOptionsMenu(menu, inflater)
+    override fun onCreateMenu(menu: Menu, inflater: MenuInflater) {
         inflater.inflate(R.menu.menu_feed, menu)
     }
 
-    override fun onPrepareOptionsMenu(menu: Menu) {
+    override fun onPrepareMenu(menu: Menu) {
         val activity = activity ?: return
 
         val filter = currentFilter
@@ -843,7 +843,7 @@ class FeedFragment : BaseFragment("FeedFragment", R.layout.fragment_feed), Filte
         }
     }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+    override fun onMenuItemSelected(item: MenuItem): Boolean {
         val contentTypes = mapOf(
                 R.id.action_content_type_sfw to "pref_feed_type_sfw",
                 R.id.action_content_type_nsfw to "pref_feed_type_nsfw",
@@ -885,7 +885,7 @@ class FeedFragment : BaseFragment("FeedFragment", R.layout.fragment_feed), Filte
             R.id.action_scroll_seen -> scrollToNextSeenAsync()
             R.id.action_scroll_unseen -> scrollToNextUnseenAsync()
 
-            else -> super.onOptionsItemSelected(item)
+            else -> false
         }
     }
 
@@ -1053,7 +1053,7 @@ class FeedFragment : BaseFragment("FeedFragment", R.layout.fragment_feed), Filte
             // to replace the current fragment. This is not the case, if we were started
             // from the Favorites page.
             if (parentFragmentManager === activity.supportFragmentManager) {
-                fragment.setTargetFragment(this, 0)
+                fragment.setFeedTarget(this)
             }
 
             activity.supportFragmentManager.beginTransaction()

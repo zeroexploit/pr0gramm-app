@@ -2,7 +2,6 @@ package com.pr0gramm.app.ui
 
 import android.app.Activity
 import android.content.pm.ActivityInfo
-import android.graphics.Point
 import android.view.Surface
 
 
@@ -15,12 +14,12 @@ object Screen {
 
 
     fun lockOrientation(activity: Activity) {
-        val display = activity.windowManager.defaultDisplay
+        val display = activity.window.decorView.display
         val rotation = display.rotation
 
-        val size = Point().also { display.getSize(it) }
-        val width = size.x
-        val height = size.y
+        val size = activity.resources.configuration
+        val width = size.screenWidthDp
+        val height = size.screenHeightDp
 
         when (rotation) {
             Surface.ROTATION_90 -> if (width > height) {

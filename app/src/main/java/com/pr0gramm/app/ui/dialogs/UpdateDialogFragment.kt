@@ -13,6 +13,7 @@ import com.pr0gramm.app.Duration
 import com.pr0gramm.app.Instant
 import com.pr0gramm.app.Logger
 import com.pr0gramm.app.R
+import com.pr0gramm.app.parcel.getParcelableOrNull
 import com.pr0gramm.app.services.SingleShotService
 import com.pr0gramm.app.services.Update
 import com.pr0gramm.app.services.UpdateChecker
@@ -36,7 +37,7 @@ class UpdateDialogFragment : BaseDialogFragment("UpdateDialogFragment") {
     private val singleShotService: SingleShotService by instance()
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        val update = arguments?.getParcelable<Update?>("update")
+        val update = arguments?.getParcelableOrNull<Update>("update")
         return update?.let { updateAvailableDialog(it) } ?: noNewUpdateDialog()
     }
 

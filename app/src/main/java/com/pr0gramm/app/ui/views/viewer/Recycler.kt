@@ -26,7 +26,7 @@ object ExoPlayerRecycler {
     private fun newExoPlayer(context: Context): ExoPlayer {
         val ctx = context.applicationContext
 
-        val params = DefaultTrackSelector.Parameters.Builder(context)
+        val params = DefaultTrackSelector(context).buildUponParameters()
             .setPreferredTextLanguage("en")
             .setPreferredTextRoleFlags(C.ROLE_FLAG_SUBTITLE)
             .setSelectUndeterminedTextLanguage(true)

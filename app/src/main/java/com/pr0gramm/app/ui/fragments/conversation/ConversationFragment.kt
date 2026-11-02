@@ -9,6 +9,8 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.core.view.MenuProvider
+import androidx.lifecycle.Lifecycle
 import androidx.paging.LoadState
 import androidx.paging.LoadStateAdapter
 import androidx.paging.PagingData
@@ -30,7 +32,7 @@ import com.pr0gramm.app.ui.base.bindViews
 import com.pr0gramm.app.ui.base.launchInViewScope
 import com.pr0gramm.app.ui.base.launchUntilViewDestroy
 import com.pr0gramm.app.ui.base.launchWhenCreated
-import com.pr0gramm.app.ui.base.launchWhenResumed
+import com.pr0gramm.app.ui.base.repeatWhenResumed
 import com.pr0gramm.app.ui.fragments.EndOfViewSmoothScroller
 import com.pr0gramm.app.ui.viewModels
 import com.pr0gramm.app.util.ErrorFormatting
@@ -46,7 +48,7 @@ import java.util.Locale
 
 /**
  */
-class ConversationFragment : BaseFragment("ConversationFragment", R.layout.fragment_conversation) {
+class ConversationFragment : BaseFragment("ConversationFragment", R.layout.fragment_conversation), MenuProvider {
     private val notifyService: NotificationService by instance()
 
     private val views by bindViews(FragmentConversationBinding::bind)
@@ -80,7 +82,7 @@ class ConversationFragment : BaseFragment("ConversationFragment", R.layout.fragm
         adapter.addAdapter(pendingMessagesAdapter)
         adapter.addAdapter(footer)
 
-        launchWhenResumed {
+        repeatWhenResumed {
             while (true) {
                 delay(15.seconds)
 
@@ -93,6 +95,7 @@ class ConversationFragment : BaseFragment("ConversationFragment", R.layout.fragm
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        requireActivity().addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.RESUMED)
 
         launchInViewScope {
             model.paging.collectLatest { pg -> updateConversation(pg) }
@@ -131,7 +134,6 @@ class ConversationFragment : BaseFragment("ConversationFragment", R.layout.fragm
         views.messages.adapter = adapter
 
         setTitle(conversationName)
-        setHasOptionsMenu(true)
 
         views.messageInput.addTextChangedListener(object : SimpleTextWatcher() {
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
@@ -188,12 +190,11 @@ class ConversationFragment : BaseFragment("ConversationFragment", R.layout.fragm
         return llm?.findLastVisibleItemPosition() == adapter.lastIndex
     }
 
-    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-        super.onCreateOptionsMenu(menu, inflater)
+    override fun onCreateMenu(menu: Menu, inflater: MenuInflater) {
         inflater.inflate(R.menu.menu_conversation, menu)
     }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+    override fun onMenuItemSelected(item: MenuItem): Boolean {
         return false != when (item.itemId) {
             R.id.action_refresh -> {
                 launchUntilViewDestroy {
@@ -206,7 +207,7 @@ class ConversationFragment : BaseFragment("ConversationFragment", R.layout.fragm
 
             R.id.action_delete_conversation -> deleteConversation()
 
-            else -> super.onOptionsItemSelected(item)
+            else -> false
         }
     }
 

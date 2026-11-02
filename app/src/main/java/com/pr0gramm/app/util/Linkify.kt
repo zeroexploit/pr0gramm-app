@@ -2,7 +2,7 @@ package com.pr0gramm.app.util
 
 import android.content.Context
 import android.content.Intent
-import android.media.AudioManager
+import android.media.AudioAttributes
 import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Parcel
@@ -222,7 +222,10 @@ private class VoiceMessageSpan(val content: ByteArray) : ClickableSpan() {
         }
 
         val mp = MediaPlayer().also { previousInstance = it }
-        mp.setAudioStreamType(AudioManager.STREAM_MUSIC)
+        mp.setAudioAttributes(AudioAttributes.Builder()
+            .setUsage(AudioAttributes.USAGE_MEDIA)
+            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+            .build())
 
         // handle events
         mp.setOnCompletionListener {

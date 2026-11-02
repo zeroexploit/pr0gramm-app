@@ -4,21 +4,23 @@ import android.content.Context
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
-import androidx.fragment.app.FragmentPagerAdapter
+import com.pr0gramm.app.ui.fragments.IdFragmentStatePagerAdapter
 
 /**
  */
-class TabsStateAdapter : FragmentPagerAdapter {
-    constructor(context: Context, fragment: Fragment) : super(fragment.childFragmentManager, BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT) {
+class TabsStateAdapter : IdFragmentStatePagerAdapter {
+    constructor(context: Context, fragment: Fragment) : super(fragment.childFragmentManager) {
         this.context = context
     }
 
-    constructor(activity: FragmentActivity) : super(activity.supportFragmentManager, BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT) {
+    constructor(activity: FragmentActivity) : super(activity.supportFragmentManager) {
         this.context = activity
     }
 
     private val context: Context
     private val tabs: MutableList<TabInfo> = mutableListOf()
+
+    override fun getItemId(position: Int): Long = position.toLong()
 
     fun getItemCount(): Int {
         return tabs.size

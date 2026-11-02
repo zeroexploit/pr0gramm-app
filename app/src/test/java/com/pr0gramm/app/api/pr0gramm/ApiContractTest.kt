@@ -91,8 +91,7 @@ class ApiContractTest {
 
     @Test fun settingsUsePartialUpdateEndpoint() = runBlocking {
         val fixture = Fixture()
-        @Suppress("UNCHECKED_CAST")
-        val settings = mapOf("junkSeparation" to 0) as GenericSettings
+        val settings: GenericSettings = mapOf("junkSeparation" to 0)
         fixture.api.storeSettings(null, settings)
         assertEquals("/api/user/siteSetting", fixture.requests.single().url.encodedPath)
         assertEquals(mapOf("junkSeparation" to "0"), fixture.requests.single().fields())

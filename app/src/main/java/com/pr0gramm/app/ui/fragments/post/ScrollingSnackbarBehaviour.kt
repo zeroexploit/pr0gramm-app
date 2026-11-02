@@ -23,7 +23,8 @@ class ScrollingViewSnackbarBehavior : SpeedDialView.ScrollingViewSnackbarBehavio
     }
 
     override fun onNestedScroll(coordinatorLayout: CoordinatorLayout, child: View, target: View, dxConsumed: Int, dyConsumed: Int, dxUnconsumed: Int, dyUnconsumed: Int, type: Int, consumed: IntArray) {
-        // do not actually consume the scroll
+        // The SpeedDial library handles scrolling through this callback; do not consume it here.
+        @Suppress("DEPRECATION")
         onNestedScroll(coordinatorLayout, child, target, dxConsumed, dyConsumed, dxUnconsumed, dyUnconsumed, type)
     }
 }

@@ -13,6 +13,7 @@ import androidx.core.os.bundleOf
 import androidx.core.view.children
 import androidx.core.view.isVisible
 import com.pr0gramm.app.R
+import com.pr0gramm.app.parcel.getParcelableOrNull
 import com.pr0gramm.app.util.dp
 import com.pr0gramm.app.util.observeChange
 import kotlin.math.roundToInt
@@ -50,7 +51,7 @@ class TagCloudContainerView @JvmOverloads constructor(
 
     override fun onRestoreInstanceState(state: Parcelable?) {
         if (state is Bundle) {
-            super.onRestoreInstanceState(state.getParcelable("superState"))
+            super.onRestoreInstanceState(state.getParcelableOrNull<Parcelable>("superState"))
 
             this.expandAnimator?.cancel()
             this.expandAnimator = null

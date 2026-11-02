@@ -11,6 +11,7 @@ abstract class BaseDrawable(private val opacity: Int) : Drawable() {
     override fun setAlpha(p0: Int) {
     }
 
+    @Deprecated("Drawable opacity is no longer used by Android")
     override fun getOpacity(): Int {
         return opacity
     }

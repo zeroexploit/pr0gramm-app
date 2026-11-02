@@ -4,6 +4,7 @@ import android.os.Parcel
 import android.os.Parcelable
 import android.util.SparseArray
 import android.view.View
+import androidx.core.os.ParcelCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.pr0gramm.app.R
 import com.pr0gramm.app.parcel.creator
@@ -49,7 +50,7 @@ class ViewHolderState() : Parcelable {
     constructor(parcel: Parcel) : this() {
         repeat(parcel.readInt()) {
             val id = parcel.readLong()
-            val value = parcel.readSparseArray<Parcelable>(javaClass.classLoader)
+            val value = ParcelCompat.readSparseArray(parcel, javaClass.classLoader, Parcelable::class.java)
 
             if (id > 0 && value != null) {
                 states.put(id, ViewState(value))

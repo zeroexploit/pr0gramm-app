@@ -6,7 +6,6 @@ import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.BlendMode
 import android.graphics.BlendModeColorFilter
-import android.graphics.PorterDuff
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -36,7 +35,7 @@ import com.pr0gramm.app.time
 import com.pr0gramm.app.ui.*
 import com.pr0gramm.app.ui.base.BaseFragment
 import com.pr0gramm.app.ui.base.bindViews
-import com.pr0gramm.app.ui.base.launchWhenStarted
+import com.pr0gramm.app.ui.base.repeatWhenStarted
 import com.pr0gramm.app.ui.dialogs.EditBookmarkDialog
 import com.pr0gramm.app.ui.dialogs.LogoutDialogFragment
 import com.pr0gramm.app.ui.upload.UploadTypeDialogFragment
@@ -120,17 +119,12 @@ class DrawerFragment : BaseFragment("DrawerFragment", R.layout.left_drawer) {
             }
         }
 
-        launchWhenStarted {
+        viewLifecycleOwner.repeatWhenStarted {
             elements.distinctUntilChanged().debounce(100).collect { items ->
                 logger.debug { "Submitting ${items.size} navigation items" }
                 navigationAdapter.submitList(items)
             }
         }
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        doIfAuthorizedHelper.onActivityResult(requestCode, resultCode)
     }
 
     fun updateCurrentFilters(current: FeedFilter?) {
@@ -496,7 +490,7 @@ private class NavigationDelegateAdapter(
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 drawable.mutate().colorFilter = BlendModeColorFilter(defaultColor, BlendMode.SRC_IN)
             } else {
-                drawable.mutate().setColorFilter(defaultColor, PorterDuff.Mode.SRC_IN)
+                drawable.mutate().setTint(defaultColor)
             }
         }
     }

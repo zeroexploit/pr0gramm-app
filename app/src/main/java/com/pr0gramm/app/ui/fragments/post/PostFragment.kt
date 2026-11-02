@@ -3,8 +3,6 @@ package com.pr0gramm.app.ui.fragments.post
 import android.animation.ObjectAnimator
 import android.animation.PropertyValuesHolder.ofFloat
 import android.app.Activity
-import android.content.Intent
-import android.graphics.Point
 import android.graphics.Rect
 import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
@@ -18,18 +16,19 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.ViewGroup.LayoutParams
 import android.widget.FrameLayout
+import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult
 import androidx.core.animation.doOnEnd
+import androidx.core.view.MenuProvider
 import androidx.core.view.isVisible
 import androidx.core.view.updatePadding
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.whenResumed
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import com.pr0gramm.app.Duration
 import com.pr0gramm.app.Instant
 import com.pr0gramm.app.R
-import com.pr0gramm.app.RequestCodes
 import com.pr0gramm.app.Settings
 import com.pr0gramm.app.api.pr0gramm.Api
 import com.pr0gramm.app.databinding.FragmentPostBinding
@@ -69,6 +68,7 @@ import com.pr0gramm.app.ui.base.asStateFlow
 import com.pr0gramm.app.ui.base.bindViews
 import com.pr0gramm.app.ui.base.launchInViewScope
 import com.pr0gramm.app.ui.base.launchWhenStarted
+import com.pr0gramm.app.ui.base.repeatWhenStarted
 import com.pr0gramm.app.ui.configureNewStyle
 import com.pr0gramm.app.ui.configureRecyclerView
 import com.pr0gramm.app.ui.dialogs.CollectionsSelectionDialog
@@ -128,12 +128,29 @@ import kotlin.math.min
  * This fragment shows the content of one post.
  */
 class PostFragment : BaseFragment("PostFragment"), NewTagDialogFragment.OnAddNewTagsListener, TitleFragment,
-    BackAwareFragment {
+    BackAwareFragment, MenuProvider {
     /**
      * The item that is displayed
      */
     val feedItem: FeedItem by lazy(LazyThreadSafetyMode.NONE) {
         requireArguments().getParcelableOrThrow(ARG_FEED_ITEM)
+    }
+
+    private val writeComment = registerForActivityResult(StartActivityForResult()) { result ->
+        val data = result.data
+        if (result.resultCode == Activity.RESULT_OK && data != null) {
+            onNewComments(WriteMessageActivity.getNewCommentFromActivityResult(data))
+        }
+    }
+
+    private val selectDownloadPath = registerForActivityResult(StartActivityForResult()) { result ->
+        val data = result.data
+        if (result.resultCode == Activity.RESULT_OK && data != null && !Storage.persistTreeUri(requireContext(), data)) {
+            showDialog(this) {
+                content(R.string.error_invalid_download_directory)
+                positive(R.string.okay)
+            }
+        }
     }
 
     private val doIfAuthorizedHelper = LoginActivity.helper(this)
@@ -186,7 +203,7 @@ class PostFragment : BaseFragment("PostFragment"), NewTagDialogFragment.OnAddNew
     override fun onCreate(savedInstanceState: Bundle?): Unit {
         super.onCreate(savedInstanceState)
 
-        launchWhenStarted {
+        repeatWhenStarted {
             userService.loginStates.drop(1).collect {
                 activity?.invalidateOptionsMenu()
             }
@@ -209,6 +226,7 @@ class PostFragment : BaseFragment("PostFragment"), NewTagDialogFragment.OnAddNew
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?): Unit {
         super.onViewCreated(view, savedInstanceState)
+        requireActivity().addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.RESUMED)
 
         val activity = requireActivity()
 
@@ -274,7 +292,7 @@ class PostFragment : BaseFragment("PostFragment"), NewTagDialogFragment.OnAddNew
         }
 
         launchInViewScope {
-            whenResumed {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
                 model.state.distinctUntilChangedBy { it.tags }.collect { state ->
                     hideProgressIfLoop(state.tags)
                     updateTitle(state.tags)
@@ -317,7 +335,7 @@ class PostFragment : BaseFragment("PostFragment"), NewTagDialogFragment.OnAddNew
                 R.id.action_write_comment -> {
                     doIfAuthorizedHelper.runAuthNoRetry {
                         val intent = WriteMessageActivity.newComment(requireActivity(), feedItem)
-                        startActivityForResult(intent, RequestCodes.WRITE_COMMENT)
+                        writeComment.launch(intent)
                     }
                 }
 
@@ -456,34 +474,11 @@ class PostFragment : BaseFragment("PostFragment"), NewTagDialogFragment.OnAddNew
         }
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-
-        doIfAuthorizedHelper.onActivityResult(requestCode, resultCode)
-
-
-        if (resultCode == Activity.RESULT_OK && data != null) {
-            if (requestCode == RequestCodes.WRITE_COMMENT) {
-                onNewComments(WriteMessageActivity.getNewCommentFromActivityResult(data))
-            }
-
-            if (requestCode == RequestCodes.SELECT_DOWNLOAD_PATH) {
-                if (!Storage.persistTreeUri(requireContext(), data)) {
-                    showDialog(this) {
-                        content(R.string.error_invalid_download_directory)
-                        positive(R.string.okay)
-                    }
-                }
-            }
-        }
-    }
-
-    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-        super.onCreateOptionsMenu(menu, inflater)
+    override fun onCreateMenu(menu: Menu, inflater: MenuInflater) {
         inflater.inflate(R.menu.menu_post, menu)
     }
 
-    override fun onPrepareOptionsMenu(menu: Menu) {
+    override fun onPrepareMenu(menu: Menu) {
         val config = configService.config()
         val isImage = isStaticImage(feedItem)
         val adminMode = userService.userIsAdmin
@@ -670,7 +665,7 @@ class PostFragment : BaseFragment("PostFragment"), NewTagDialogFragment.OnAddNew
         return false
     }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+    override fun onMenuItemSelected(item: MenuItem): Boolean {
         val activity = activity ?: return true
 
         return true == when (item.itemId) {
@@ -686,7 +681,7 @@ class PostFragment : BaseFragment("PostFragment"), NewTagDialogFragment.OnAddNew
             R.id.action_report -> showReportDialog()
             R.id.action_zoom -> enterFullscreen()
             MainActivity.ID_FAKE_HOME -> onHomePressed()
-            else -> super.onOptionsItemSelected(item)
+            else -> false
         }
     }
 
@@ -710,7 +705,7 @@ class PostFragment : BaseFragment("PostFragment"), NewTagDialogFragment.OnAddNew
             showDialog(this) {
                 content(R.string.hint_select_download_directory)
                 positive {
-                    startActivityForResult(intent, RequestCodes.SELECT_DOWNLOAD_PATH)
+                    selectDownloadPath.launch(intent)
                 }
             }
 
@@ -738,11 +733,6 @@ class PostFragment : BaseFragment("PostFragment"), NewTagDialogFragment.OnAddNew
                 showErrorString(parentFragmentManager, getString(R.string.error_could_not_create_download_directory))
             }
         }
-    }
-
-    override fun onResume() {
-        super.onResume()
-        setHasOptionsMenu(true)
     }
 
     private fun showDeleteItemDialog() {
@@ -838,8 +828,8 @@ class PostFragment : BaseFragment("PostFragment"), NewTagDialogFragment.OnAddNew
         viewer.updatePadding(top = viewerPaddingTop)
 
         if (feedItem.width > 0 && feedItem.height > 0) {
-            val screenSize = Point().also { activity.windowManager.defaultDisplay.getSize(it) }
-            val expectedMediaHeight = screenSize.x * feedItem.height / feedItem.width
+            val screenWidth = activity.resources.displayMetrics.widthPixels
+            val expectedMediaHeight = screenWidth * feedItem.height / feedItem.width
             val expectedViewerHeight = expectedMediaHeight + viewerPaddingTop
 
             logger.debug { "Initialize viewer height to $expectedViewerHeight" }
@@ -848,11 +838,6 @@ class PostFragment : BaseFragment("PostFragment"), NewTagDialogFragment.OnAddNew
                 previousState.copy(height = expectedViewerHeight)
             }
 
-            // if we can guess, that the height of the media will be more than the height of the
-            // screen, we can directly hide the FAB
-            if (expectedMediaHeight > screenSize.y) {
-                // fab.hide()
-            }
         }
 
         viewer.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
@@ -1246,10 +1231,7 @@ class PostFragment : BaseFragment("PostFragment"), NewTagDialogFragment.OnAddNew
 
             doIfAuthorizedHelper.runAuthWithRetry {
                 val context = context ?: return@runAuthWithRetry
-                startActivityForResult(
-                    WriteMessageActivity.answerToComment(context, feedItem, comment, parentComments),
-                    RequestCodes.WRITE_COMMENT
-                )
+                writeComment.launch(WriteMessageActivity.answerToComment(context, feedItem, comment, parentComments))
             }
         }
 

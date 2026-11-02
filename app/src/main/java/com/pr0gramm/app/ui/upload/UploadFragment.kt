@@ -14,13 +14,13 @@ import android.widget.Checkable
 import android.widget.CompoundButton
 import android.widget.FrameLayout
 import android.widget.RadioButton
+import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult
 import androidx.core.text.bold
 import androidx.core.text.inSpans
 import androidx.core.view.children
 import androidx.core.view.isVisible
 import com.google.android.material.snackbar.Snackbar
 import com.pr0gramm.app.R
-import com.pr0gramm.app.RequestCodes
 import com.pr0gramm.app.api.pr0gramm.Api
 import com.pr0gramm.app.databinding.FragmentUploadBinding
 import com.pr0gramm.app.feed.ContentType
@@ -63,6 +63,16 @@ import kotlinx.coroutines.flow.mapNotNull
  * This activity performs the actual upload.
  */
 class UploadFragment : BaseFragment("UploadFragment", R.layout.fragment_upload) {
+    private val selectMedia = registerForActivityResult(StartActivityForResult()) { result ->
+        val image = result.data?.data
+        logger.info { "Got response from image picker: rc=${result.resultCode}, intent=${result.data}" }
+        if (result.resultCode == Activity.RESULT_OK && image != null) {
+            handleMediaUri(image)
+        } else {
+            activity?.finish()
+        }
+    }
+
     private val rulesService: RulesService by instance()
 
     private val tagSuggestions: TagSuggestionService by instance()
@@ -249,7 +259,7 @@ class UploadFragment : BaseFragment("UploadFragment", R.layout.fragment_upload) 
             return
         }
 
-        startActivityForResult(intent, RequestCodes.SELECT_MEDIA)
+        selectMedia.launch(intent)
     }
 
     private fun showSimilarPosts(similar: List<Api.Posted.SimilarItem>) {
@@ -293,20 +303,6 @@ class UploadFragment : BaseFragment("UploadFragment", R.layout.fragment_upload) 
         startActivity(intent)
 
         activity.finish()
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, intent: Intent?) {
-        super.onActivityResult(requestCode, resultCode, intent)
-
-        logger.info { "Got response from image picker: rc=$resultCode, intent=$intent" }
-        if (requestCode == RequestCodes.SELECT_MEDIA) {
-            if (resultCode == Activity.RESULT_OK && intent != null) {
-                val image = intent.data ?: run { activity?.finish(); return }
-                handleMediaUri(image)
-            } else {
-                activity?.finish()
-            }
-        }
     }
 
     private fun handleMediaUri(image: Uri) {

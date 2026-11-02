@@ -2,6 +2,7 @@ package com.pr0gramm.app.ui
 
 import android.app.Application
 import android.content.Context
+import android.os.Build
 import com.google.android.gms.ads.AdListener
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.LoadAdError
@@ -153,9 +154,14 @@ class AdService(
 
     fun isSideloaded(): Boolean {
         return try {
-            val name = appContext
-                .packageManager
-                .getInstallerPackageName(BuildConfig.APPLICATION_ID)
+            val packageManager = appContext.packageManager
+            val name = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                packageManager.getInstallSourceInfo(BuildConfig.APPLICATION_ID).installingPackageName
+            } else {
+                // InstallSourceInfo is unavailable on Android 6-10.
+                @Suppress("DEPRECATION")
+                packageManager.getInstallerPackageName(BuildConfig.APPLICATION_ID)
+            }
 
             logger.info { "Installer package is '$name'" }
 

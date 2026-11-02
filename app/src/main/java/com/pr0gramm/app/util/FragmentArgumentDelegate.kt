@@ -2,6 +2,7 @@ package com.pr0gramm.app.util
 
 import android.os.Bundle
 import android.os.Parcelable
+import androidx.core.os.BundleCompat
 import androidx.fragment.app.Fragment
 import java.util.*
 import kotlin.properties.ReadWriteProperty
@@ -13,11 +14,11 @@ import kotlin.reflect.KProperty
  *
  * Inspired by Jake Wharton, he mentioned it during his IO/17 talk about Kotlin
  */
-private class FragmentArgumentDelegate<T : Any>(val nameOverride: String?, val defaultValue: T?) : ReadWriteProperty<Fragment, T> {
-    @Suppress("UNCHECKED_CAST")
+@PublishedApi
+internal class FragmentArgumentDelegate<T : Any>(private val type: Class<T>, val nameOverride: String?, val defaultValue: T?) : ReadWriteProperty<Fragment, T> {
     override operator fun getValue(thisRef: Fragment, property: KProperty<*>): T {
         val name = nameOverride ?: property.name
-        val value = thisRef.arguments?.get(name) as T?
+        val value = thisRef.arguments?.getArgumentValue(name, type)
         return value ?: defaultValue ?: throw IllegalStateException("Property $name is not set")
     }
 
@@ -27,11 +28,11 @@ private class FragmentArgumentDelegate<T : Any>(val nameOverride: String?, val d
     }
 }
 
-private class OptionalFragmentArgumentDelegate<T : Any>(val nameOverride: String?, val default: T?) : ReadWriteProperty<Fragment, T?> {
-    @Suppress("UNCHECKED_CAST")
+@PublishedApi
+internal class OptionalFragmentArgumentDelegate<T : Any>(private val type: Class<T>, val nameOverride: String?, val default: T?) : ReadWriteProperty<Fragment, T?> {
     override operator fun getValue(thisRef: Fragment, property: KProperty<*>): T? {
         val name = nameOverride ?: property.name
-        val value = thisRef.arguments?.get(name) as T?
+        val value = thisRef.arguments?.getArgumentValue(name, type)
         return value ?: default
     }
 
@@ -39,6 +40,30 @@ private class OptionalFragmentArgumentDelegate<T : Any>(val nameOverride: String
         val args = thisRef.arguments ?: Bundle().also { thisRef.arguments = it }
         setArgumentValue(args, nameOverride ?: property.name, value)
     }
+}
+
+private fun <T : Any> Bundle.getArgumentValue(key: String, type: Class<T>): T? {
+    if (!containsKey(key)) return null
+    val value = when (type) {
+        String::class.java -> getString(key)
+        Int::class.javaObjectType -> getInt(key)
+        Short::class.javaObjectType -> getShort(key)
+        Long::class.javaObjectType -> getLong(key)
+        Byte::class.javaObjectType -> getByte(key)
+        Boolean::class.javaObjectType -> getBoolean(key)
+        ByteArray::class.java -> getByteArray(key)
+        Char::class.javaObjectType -> getChar(key)
+        CharArray::class.java -> getCharArray(key)
+        CharSequence::class.java -> getCharSequence(key)
+        Float::class.javaObjectType -> getFloat(key)
+        Double::class.javaObjectType -> getDouble(key)
+        Bundle::class.java -> getBundle(key)
+        else -> {
+            require(Parcelable::class.java.isAssignableFrom(type)) { "Unsupported fragment argument type: $type" }
+            BundleCompat.getParcelable(this, key, type)
+        }
+    }
+    return type.cast(value)
 }
 
 private fun setArgumentValue(args: Bundle, key: String, value: Any?) {
@@ -53,6 +78,7 @@ private fun setArgumentValue(args: Bundle, key: String, value: Any?) {
         is Short -> args.putShort(key, value)
         is Long -> args.putLong(key, value)
         is Byte -> args.putByte(key, value)
+        is Boolean -> args.putBoolean(key, value)
         is ByteArray -> args.putByteArray(key, value)
         is Char -> args.putChar(key, value)
         is CharArray -> args.putCharArray(key, value)
@@ -65,16 +91,16 @@ private fun setArgumentValue(args: Bundle, key: String, value: Any?) {
     }
 }
 
-fun <T : Any> fragmentArgument(name: String? = null): ReadWriteProperty<Fragment, T> {
-    return FragmentArgumentDelegate(name, null)
+inline fun <reified T : Any> fragmentArgument(name: String? = null): ReadWriteProperty<Fragment, T> {
+    return FragmentArgumentDelegate(T::class.javaObjectType, name, null)
 }
 
-fun <T : Any> fragmentArgumentWithDefault(defaultValue: T, name: String? = null): ReadWriteProperty<Fragment, T> {
-    return FragmentArgumentDelegate(name, defaultValue)
+inline fun <reified T : Any> fragmentArgumentWithDefault(defaultValue: T, name: String? = null): ReadWriteProperty<Fragment, T> {
+    return FragmentArgumentDelegate(T::class.javaObjectType, name, defaultValue)
 }
 
-fun <T : Any> optionalFragmentArgument(default: T? = null, name: String? = null): ReadWriteProperty<Fragment, T?> {
-    return OptionalFragmentArgumentDelegate(name, default)
+inline fun <reified T : Any> optionalFragmentArgument(default: T? = null, name: String? = null): ReadWriteProperty<Fragment, T?> {
+    return OptionalFragmentArgumentDelegate(T::class.javaObjectType, name, default)
 }
 
 inline fun <reified T : Enum<T>> enumFragmentArgument(): ReadWriteProperty<Fragment, T> {

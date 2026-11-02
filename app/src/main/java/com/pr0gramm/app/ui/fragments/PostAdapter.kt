@@ -17,6 +17,7 @@ import com.pr0gramm.app.R
 import com.pr0gramm.app.api.pr0gramm.Api
 import com.pr0gramm.app.feed.FeedItem
 import com.pr0gramm.app.orm.Vote
+import com.pr0gramm.app.parcel.getParcelableOrNull
 import com.pr0gramm.app.services.FollowState
 import com.pr0gramm.app.ui.*
 import com.pr0gramm.app.ui.fragments.post.CommentTree
@@ -151,7 +152,7 @@ private class TagsViewHolderAdapterDelegate
         super.onRestoreInstanceState(inState)
 
         // load the previous view state
-        viewStates = inState.getParcelable("TagsViewHolder.state") ?: ViewHolderState()
+        viewStates = inState.getParcelableOrNull("TagsViewHolder.state") ?: ViewHolderState()
     }
 
     class ViewHolder(val tagsView: TagsView) : RecyclerView.ViewHolder(tagsView),

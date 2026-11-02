@@ -13,13 +13,12 @@ import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
+import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult
 import androidx.annotation.DrawableRes
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
-import androidx.core.view.ViewCompat
 import androidx.core.view.isVisible
 import com.pr0gramm.app.R
-import com.pr0gramm.app.RequestCodes
 import com.pr0gramm.app.api.pr0gramm.Api
 import com.pr0gramm.app.decodeBase64
 import com.pr0gramm.app.services.ThemeHelper
@@ -163,7 +162,7 @@ class LoginActivity : BaseAppCompatActivity("LoginActivity") {
 
         val fallbackColor = ContextCompat.getColor(this, primaryColorDark)
         val background = createBackgroundDrawable(drawableId, fallbackColor)
-        ViewCompat.setBackground(findViewById(R.id.content), background)
+        findViewById<View>(R.id.content).background = background
     }
 
     private fun createBackgroundDrawable(drawableId: Int, fallbackColor: Int): Drawable {
@@ -279,14 +278,10 @@ class LoginActivity : BaseAppCompatActivity("LoginActivity") {
     class DoIfAuthorizedHelper(private val fragment: androidx.fragment.app.Fragment) {
         private var retry: Callback? = null
 
-        fun onActivityResult(requestCode: Int, resultCode: Int) {
-            if (requestCode == RequestCodes.AUTHORIZED_HELPER) {
-                if (resultCode == Activity.RESULT_OK) {
-                    retry?.invoke()
-                }
-
-                retry = null
-            }
+        private val login = fragment.registerForActivityResult(StartActivityForResult()) { result ->
+            val callback = retry
+            retry = null
+            if (result.resultCode == Activity.RESULT_OK) callback?.invoke()
         }
 
         /**
@@ -305,7 +300,7 @@ class LoginActivity : BaseAppCompatActivity("LoginActivity") {
                 this.retry = retry
 
                 val intent = Intent(context, LoginActivity::class.java)
-                startActivityForResult(intent, RequestCodes.AUTHORIZED_HELPER)
+                login.launch(intent)
                 false
             }
         }
@@ -324,17 +319,13 @@ class LoginActivity : BaseAppCompatActivity("LoginActivity") {
 
             if (!userService.isAuthorized) {
                 val intent = Intent(context, LoginActivity::class.java)
-                startActivityForResult(intent, RequestCodes.AUTHORIZED_HELPER)
+                login.launch(intent)
                 return false
             }
 
             runnable()
 
             return true
-        }
-
-        private fun startActivityForResult(intent: Intent, requestCode: Int) {
-            fragment.startActivityForResult(intent, requestCode)
         }
     }
 

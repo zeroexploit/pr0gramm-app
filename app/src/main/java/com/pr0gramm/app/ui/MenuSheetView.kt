@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.annotation.TargetApi
 import android.content.Context
 import android.graphics.Outline
-import android.graphics.PorterDuff
 import android.text.TextUtils
 import android.view.*
 import android.widget.*
@@ -252,7 +251,7 @@ class MenuSheetView(context: Context, @StringRes titleRes: Int, listener: OnMenu
                 val menuItem = item.menuItem ?: return
 
                 menuItem.icon?.let { icon ->
-                    icon.mutate().setColorFilter(iconColor, PorterDuff.Mode.SRC_IN)
+                    icon.mutate().setTint(iconColor)
                     this.icon.setImageDrawable(icon)
                 }
 

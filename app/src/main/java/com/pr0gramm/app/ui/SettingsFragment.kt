@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.graphics.drawable.DrawableCompat
 import androidx.preference.Preference
@@ -14,7 +15,6 @@ import androidx.preference.PreferenceGroup
 import com.pr0gramm.app.BuildConfig
 import com.pr0gramm.app.Instant
 import com.pr0gramm.app.R
-import com.pr0gramm.app.RequestCodes
 import com.pr0gramm.app.Settings
 import com.pr0gramm.app.services.BookmarkService
 import com.pr0gramm.app.services.RecentSearchesServices
@@ -37,6 +37,13 @@ import kotlinx.coroutines.runInterruptible
 
 class SettingsFragment : BasePreferenceFragment("SettingsFragment"),
     SharedPreferences.OnSharedPreferenceChangeListener {
+
+    private val selectDownloadPath = registerForActivityResult(StartActivityForResult()) { result ->
+        val data = result.data
+        if (result.resultCode == Activity.RESULT_OK && data != null && !Storage.persistTreeUri(requireContext(), data)) {
+            showInvalidDownloadDirectorySelected()
+        }
+    }
 
     private val userService: UserService by instance()
     private val bookmarkService: BookmarkService by instance()
@@ -196,7 +203,7 @@ class SettingsFragment : BasePreferenceFragment("SettingsFragment"),
 
             "pref_pseudo_download_target" -> {
                 val intent = Storage.openTreeIntent(requireContext())
-                startActivityForResult(intent, RequestCodes.SELECT_DOWNLOAD_PATH)
+                selectDownloadPath.launch(intent)
                 return true
             }
 
@@ -221,21 +228,6 @@ class SettingsFragment : BasePreferenceFragment("SettingsFragment"),
         showDialog(this) {
             content(R.string.hint_no_file_manager_available)
             positive(R.string.okay)
-        }
-    }
-
-    @Deprecated("Deprecated in Java")
-    override fun onActivityResult(requestCode: Int, resultCode: Int, resultIntent: Intent?) {
-        if (requestCode == RequestCodes.SELECT_DOWNLOAD_PATH && resultCode == Activity.RESULT_OK) {
-            if (!Storage.persistTreeUri(
-                    requireContext(), resultIntent
-                        ?: return
-                )
-            ) {
-                showInvalidDownloadDirectorySelected()
-            }
-        } else {
-            super.onActivityResult(requestCode, resultCode, resultIntent)
         }
     }
 

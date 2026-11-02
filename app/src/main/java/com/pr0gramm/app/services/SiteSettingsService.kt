@@ -50,7 +50,7 @@ class SyncSiteSettingsService(
         userService.storeSiteSettings(
             MoshiInstance
                 .adapter<SiteSettings>()
-                .toJsonValue(settings) as Map<String, Any?>
+                .toJsonValue(settings).asSettingsMap()
         )
     }
 }
@@ -80,7 +80,7 @@ class SiteSettingsService {
         // get local settings as a fallback for empty values
         val fallbackValues = MoshiInstance
             .adapter<SiteSettings>()
-            .toJsonValue(currentSettings) as Map<String, Any?>
+            .toJsonValue(currentSettings).asSettingsMap()
 
         logger.info { "Got fallbackValues=$fallbackValues and remote values $remoteValues" }
 
@@ -105,6 +105,14 @@ class SiteSettingsService {
         Settings.backup = settings.enableItemHistory
         Settings.markItemsAsSeen = settings.markSeenItems
         Settings.feedHideJunkInNew = settings.hideJunkInNew
+    }
+}
+
+private fun Any?.asSettingsMap(): Map<String, Any?> {
+    require(this is Map<*, *>) { "Site settings must be a JSON object" }
+    return entries.associate { (key, value) ->
+        require(key is String) { "Site setting keys must be strings" }
+        key to value
     }
 }
 

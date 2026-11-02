@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.os.Parcelable
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.os.BundleCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentTransaction
@@ -209,7 +210,7 @@ abstract class IdFragmentStatePagerAdapter(private val mFragmentManager: Fragmen
             state.classLoader = loader
 
             val ids = state.getLongArray("ids")
-            val fss = state.getParcelableArray("states")
+            val fss = BundleCompat.getParcelableArray(state, "states", Fragment.SavedState::class.java)
 
             mFragments.clear()
             mSavedState.clear()

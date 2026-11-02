@@ -16,6 +16,7 @@ import android.view.MenuItem
 import android.view.View
 import android.view.Window
 import android.view.WindowManager
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts.RequestPermission
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.ActionBarDrawerToggle
@@ -41,6 +42,7 @@ import com.pr0gramm.app.feed.FeedType
 import com.pr0gramm.app.model.config.Config
 import com.pr0gramm.app.model.info.InfoMessage
 import com.pr0gramm.app.orm.bookmarkOf
+import com.pr0gramm.app.parcel.getExtraParcelableOrNull
 import com.pr0gramm.app.parcel.getParcelableOrNull
 import com.pr0gramm.app.services.*
 import com.pr0gramm.app.services.config.ConfigService
@@ -72,6 +74,10 @@ class MainActivity : BaseAppCompatActivity("MainActivity"),
     PermissionHelperActivity,
     RecyclerViewPoolProvider by RecyclerViewPoolMap() {
 
+    private val backCallback = object : OnBackPressedCallback(true) {
+        override fun handleOnBackPressed() = handleBackPressed()
+    }
+
     private var consentInfo: ConsentInformation? = null
     private val handler = Handler(Looper.getMainLooper())
     private var permissionHelper = PermissionHelperDelegate(this)
@@ -97,6 +103,7 @@ class MainActivity : BaseAppCompatActivity("MainActivity"),
     public override fun onCreate(savedInstanceState: Bundle?) {
         setTheme(ThemeHelper.theme.translucentStatus)
         super.onCreate(savedInstanceState)
+        onBackPressedDispatcher.addCallback(this, backCallback)
 
         if (Settings.secureApp) {
             // hide app from recent apps list
@@ -145,7 +152,7 @@ class MainActivity : BaseAppCompatActivity("MainActivity"),
 
             createDrawerFragment()
 
-            if (startedFromLauncher || intent == null) {
+            if (startedFromLauncher) {
                 // load feed-fragment into view
                 gotoFeedFragment(defaultFeedFilter(), true)
 
@@ -285,7 +292,7 @@ class MainActivity : BaseAppCompatActivity("MainActivity"),
     private fun buildDrawerArrowDrawable(): DrawerArrowDrawable {
         val drawable = NotificationDrawerArrowDrawable(this)
 
-        launchWhenResumed {
+        repeatWhenResumed {
             val inboxService = applicationContext.injector.instance<InboxService>()
 
             inboxService.unreadMessagesCount()
@@ -477,7 +484,7 @@ class MainActivity : BaseAppCompatActivity("MainActivity"),
         if (!drawerToggle.isDrawerIndicatorEnabled) {
             if (item.itemId == android.R.id.home) {
                 if (!dispatchFakeHomeEvent(item))
-                    onBackPressed()
+                    onBackPressedDispatcher.onBackPressed()
 
                 return true
             }
@@ -495,7 +502,7 @@ class MainActivity : BaseAppCompatActivity("MainActivity"),
         )
     }
 
-    override fun onBackPressed() {
+    private fun handleBackPressed() {
         if (views.drawerLayout.isDrawerOpen(GravityCompat.START)) {
             views.drawerLayout.closeDrawers()
             return
@@ -525,7 +532,12 @@ class MainActivity : BaseAppCompatActivity("MainActivity"),
         }
 
         try {
-            super.onBackPressed()
+            backCallback.isEnabled = false
+            try {
+                onBackPressedDispatcher.onBackPressed()
+            } finally {
+                backCallback.isEnabled = true
+            }
         } catch (err: IllegalStateException) {
             // workaround for:
             // this is sometimes called after onSaveInstanceState
@@ -801,7 +813,7 @@ class MainActivity : BaseAppCompatActivity("MainActivity"),
             }
         }
 
-        val notificationTime: Instant? = intent.getParcelableExtra("MainActivity.NOTIFICATION_TIME")
+        val notificationTime: Instant? = intent.getExtraParcelableOrNull("MainActivity.NOTIFICATION_TIME")
 
         val result = FilterParser.parse(uri, notificationTime)
         if (result != null) {

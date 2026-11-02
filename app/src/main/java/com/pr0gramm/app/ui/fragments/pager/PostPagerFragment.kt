@@ -160,8 +160,14 @@ class PostPagerFragment : BaseFragment("PostPagerFragment", R.layout.fragment_po
         activity.updateActionbarTitle()
     }
 
+    fun setFeedTarget(target: FeedFragment) {
+        target.parentFragmentManager.putFragment(requireArguments(), ARG_TARGET_FEED, target)
+    }
+
     override fun onStop() {
-        val target = targetFragment as? FeedFragment
+        val target = arguments?.takeIf { it.containsKey(ARG_TARGET_FEED) }?.let {
+            parentFragmentManager.getFragment(it, ARG_TARGET_FEED) as? FeedFragment
+        }
 
         // merge the updated feed back into our parent fragment.
         val feed = model.state.value.feed
@@ -298,6 +304,7 @@ class PostPagerFragment : BaseFragment("PostPagerFragment", R.layout.fragment_po
     }
 
     companion object {
+        private const val ARG_TARGET_FEED = "PostPagerFragment.targetFeed"
         private const val ARG_FEED = "PP.feed"
         private const val ARG_TITLE = "PP.title"
         private const val ARG_START_ITEM = "PP.startItem"

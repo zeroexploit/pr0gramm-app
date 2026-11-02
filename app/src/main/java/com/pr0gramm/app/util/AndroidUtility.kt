@@ -15,7 +15,6 @@ import android.text.style.BulletSpan
 import android.text.style.LeadingMarginSpan
 import android.util.LruCache
 import android.view.View
-import android.view.WindowInsets
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.ImageView
@@ -28,8 +27,11 @@ import androidx.core.content.getSystemService
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.content.res.use
 import androidx.core.graphics.drawable.DrawableCompat
-import androidx.core.net.ConnectivityManagerCompat
 import androidx.core.text.inSpans
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.view.postDelayed
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.pr0gramm.app.BuildConfig
@@ -81,20 +83,10 @@ object AndroidUtility {
      * Gets the height of the statusbar.
      */
     fun getStatusBarHeight(context: Context): Int {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            val window = activityFromContext(context)?.window
-            val rootWindowInsets = window?.decorView?.rootWindowInsets
-            if (rootWindowInsets != null) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    // this seems to be always correct on android 11 and better.
-                    return rootWindowInsets
-                        .getInsetsIgnoringVisibility(WindowInsets.Type.statusBars())
-                        .top
-                }
-
-                // this works for android 6 and above
-                return rootWindowInsets.stableInsetTop
-            }
+        val decorView = activityFromContext(context)?.window?.decorView
+        val rootWindowInsets = decorView?.let(ViewCompat::getRootWindowInsets)
+        if (rootWindowInsets != null) {
+            return rootWindowInsets.getInsetsIgnoringVisibility(WindowInsetsCompat.Type.statusBars()).top
         }
 
         // use the old code as fallback in case we have a really old android
@@ -171,7 +163,7 @@ object AndroidUtility {
         }
 
         val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        return ConnectivityManagerCompat.isActiveNetworkMetered(cm)
+        return cm.isActiveNetworkMetered
     }
 
     /**
@@ -239,27 +231,28 @@ object AndroidUtility {
     }
 
     fun applyWindowFullscreen(activity: Activity, fullscreen: Boolean) {
-        var flags = 0
-
+        val window = activity.window
+        WindowCompat.setDecorFitsSystemWindows(window, !fullscreen)
+        val controller = WindowCompat.getInsetsController(window, window.decorView)
         if (fullscreen) {
-            flags = flags or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-
-            flags = flags or (View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                    or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                    or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                    or View.SYSTEM_UI_FLAG_FULLSCREEN)
-
-            flags = flags or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+            controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            controller.hide(WindowInsetsCompat.Type.systemBars())
+        } else {
+            controller.show(WindowInsetsCompat.Type.systemBars())
         }
-
-        val decorView = activity.window.decorView
-        decorView.systemUiVisibility = flags
     }
 
     fun screenSize(activity: Activity): Point {
-        val screenSize = Point()
-        val display = activity.windowManager.defaultDisplay
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val bounds = activity.windowManager.currentWindowMetrics.bounds
+            return Point(bounds.width(), bounds.height())
+        }
 
+        // WindowMetrics is unavailable on Android 6-10.
+        @Suppress("DEPRECATION")
+        val display = activity.windowManager.defaultDisplay
+        val screenSize = Point()
+        @Suppress("DEPRECATION")
         display.getRealSize(screenSize)
 
         return screenSize
@@ -339,16 +332,16 @@ fun Throwable.getMessageWithCauses(): String {
     val hasCause = cause != null && error !== cause
     val message = error.message ?: ""
     val hasMessage = message.isNotBlank() && (
-            !hasCause || (cause != null && cause.javaClass.directName !in message))
+            !hasCause || cause.javaClass.directName !in message)
 
     return if (hasMessage) {
-        if (hasCause && cause != null) {
+        if (hasCause) {
             "$type(${error.message}), caused by ${cause.getMessageWithCauses()}"
         } else {
             "$type(${error.message})"
         }
     } else {
-        if (hasCause && cause != null) {
+        if (hasCause) {
             "$type, caused by ${cause.getMessageWithCauses()}"
         } else {
             type
